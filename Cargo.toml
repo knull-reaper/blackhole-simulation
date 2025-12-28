@@ -1,0 +1,18 @@
+[package]
+name = "blackhole_rust"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+winit = { version = "0.29.10", features = ["rwh_05"] }
+glutin = "0.31.3"
+glutin-winit = "0.4.2"
+glow = "0.13.1"
+egui = "0.28"
+egui_glow = { version = "0.28", features = ["winit"] }
+glam = "0.24.2"
+image = "0.24.9"
+anyhow = "1.0"
+byteorder = "1.5"
+bytemuck = "1.14"
+raw-window-handle = "0.5.2"
