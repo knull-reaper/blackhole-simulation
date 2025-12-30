@@ -6,6 +6,10 @@ Real-time black hole renderer in Rust with interactive tuning, Kerr-style visual
 
 ![Blackhole Rust Preview](./blackhole_recorded.gif)
 
+## Live Demo
+
+WebAssembly build: https://ionizeit.cloud/
+
 ## Highlights
 
 - Adaptive ray marching for high FPS in empty space with tight detail near the horizon.
@@ -71,6 +75,12 @@ Build the web bundle:
 ```
 
 Serve the `web/` directory (any static server) and open `http://localhost:8000/`.
+
+## Wasm vs Native
+
+- WebAssembly runs via WebGL2 with embedded shader/texture assets and 8-bit render targets for broad browser compatibility.
+- Native builds use desktop OpenGL with HDR render targets and OS windowing/fullscreen behavior.
+- Expect lower performance and fewer GPU features in the wasm build depending on browser/GPU support.
 
 ## Releases
 
