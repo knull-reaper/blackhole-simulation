@@ -6,11 +6,63 @@
     <style>
         body { margin: 0; overflow: hidden; background: black; }
         canvas { display: block; width: 100vw; height: 100vh; }
+        #mobile-warning {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            display: none;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+        }
+        #mobile-warning .content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 14px;
+        }
+        #mobile-warning strong { font-weight: 600; }
+        #mobile-warning button {
+            border: 1px solid #555;
+            background: transparent;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
+    <div id="mobile-warning" role="alert">
+        <div class="content">
+            <div>
+                <strong>Desktop Recommended</strong>
+                <span>For best performance, open this on a desktop with a dedicated GPU.</span>
+            </div>
+            <button id="mobile-warning-dismiss" type="button">OK</button>
+        </div>
+    </div>
     <script type="module">
         import init from './pkg/blackhole_web.js';
+        const isMobile = (navigator.userAgentData && navigator.userAgentData.mobile) ||
+            /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+            window.matchMedia('(pointer: coarse)').matches;
+        if (isMobile) {
+            const warning = document.getElementById('mobile-warning');
+            const dismiss = document.getElementById('mobile-warning-dismiss');
+            if (warning) {
+                warning.style.display = 'block';
+            }
+            if (dismiss) {
+                dismiss.addEventListener('click', () => {
+                    warning.style.display = 'none';
+                });
+            }
+        }
         init();
     </script>
 </body>
