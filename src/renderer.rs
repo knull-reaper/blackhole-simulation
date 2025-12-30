@@ -1,5 +1,7 @@
-use anyhow::Context;
 use glow::HasContext;
+#[cfg(not(target_arch = "wasm32"))]
+use anyhow::Context;
+#[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
 use crate::app_state::AppState;
 use crate::render_pass::RenderPass;
@@ -14,7 +16,7 @@ fn flag(value: bool) -> f32 {
     }
 }
 
-fn delete_optional_texture(gl: &glow::Context, texture: &mut Option<glow::NativeTexture>) {
+fn delete_optional_texture(gl: &glow::Context, texture: &mut Option<glow::Texture>) {
     if let Some(texture) = texture.take() {
         unsafe {
             gl.delete_texture(texture);
@@ -24,7 +26,7 @@ fn delete_optional_texture(gl: &glow::Context, texture: &mut Option<glow::Native
 
 fn delete_optional_framebuffer(
     gl: &glow::Context,
-    framebuffer: &mut Option<glow::NativeFramebuffer>,
+    framebuffer: &mut Option<glow::Framebuffer>,
 ) {
     if let Some(framebuffer) = framebuffer.take() {
         unsafe {
@@ -33,7 +35,7 @@ fn delete_optional_framebuffer(
     }
 }
 
-fn delete_textures(gl: &glow::Context, textures: &mut Vec<glow::NativeTexture>) {
+fn delete_textures(gl: &glow::Context, textures: &mut Vec<glow::Texture>) {
     for texture in textures.drain(..) {
         unsafe {
             gl.delete_texture(texture);
@@ -41,7 +43,7 @@ fn delete_textures(gl: &glow::Context, textures: &mut Vec<glow::NativeTexture>) 
     }
 }
 
-fn delete_framebuffers(gl: &glow::Context, framebuffers: &mut Vec<glow::NativeFramebuffer>) {
+fn delete_framebuffers(gl: &glow::Context, framebuffers: &mut Vec<glow::Framebuffer>) {
     for framebuffer in framebuffers.drain(..) {
         unsafe {
             gl.delete_framebuffer(framebuffer);
@@ -49,6 +51,7 @@ fn delete_framebuffers(gl: &glow::Context, framebuffers: &mut Vec<glow::NativeFr
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn find_asset_root() -> anyhow::Result<PathBuf> {
     let exe_path = std::env::current_exe().context("Failed to resolve executable path")?;
     let mut dir = exe_path
@@ -81,30 +84,30 @@ pub struct Renderer {
     pass_tonemapping: RenderPass,
     pass_passthrough: RenderPass,
 
-    tex_blackhole: Option<glow::NativeTexture>,
-    fbo_blackhole: Option<glow::NativeFramebuffer>,
+    tex_blackhole: Option<glow::Texture>,
+    fbo_blackhole: Option<glow::Framebuffer>,
     
-    tex_brightness: Option<glow::NativeTexture>,
-    fbo_brightness: Option<glow::NativeFramebuffer>,
+    tex_brightness: Option<glow::Texture>,
+    fbo_brightness: Option<glow::Framebuffer>,
 
-    tex_lens_flare: Option<glow::NativeTexture>,
-    fbo_lens_flare: Option<glow::NativeFramebuffer>,
+    tex_lens_flare: Option<glow::Texture>,
+    fbo_lens_flare: Option<glow::Framebuffer>,
 
-    tex_downsampled: Vec<glow::NativeTexture>,
-    fbo_downsampled: Vec<glow::NativeFramebuffer>,
+    tex_downsampled: Vec<glow::Texture>,
+    fbo_downsampled: Vec<glow::Framebuffer>,
 
-    tex_upsampled: Vec<glow::NativeTexture>,
-    fbo_upsampled: Vec<glow::NativeFramebuffer>,
+    tex_upsampled: Vec<glow::Texture>,
+    fbo_upsampled: Vec<glow::Framebuffer>,
 
-    tex_bloom_final: Option<glow::NativeTexture>,
-    fbo_bloom_final: Option<glow::NativeFramebuffer>,
+    tex_bloom_final: Option<glow::Texture>,
+    fbo_bloom_final: Option<glow::Framebuffer>,
 
-    tex_tonemapped: Option<glow::NativeTexture>,
-    fbo_tonemapped: Option<glow::NativeFramebuffer>,
+    tex_tonemapped: Option<glow::Texture>,
+    fbo_tonemapped: Option<glow::Framebuffer>,
 
-    galaxy_cubemap: glow::NativeTexture,
-    color_map: glow::NativeTexture,
-    noise_tex: glow::NativeTexture,
+    galaxy_cubemap: glow::Texture,
+    color_map: glow::Texture,
+    noise_tex: glow::Texture,
 
     width: u32,
     height: u32,
@@ -112,11 +115,15 @@ pub struct Renderer {
 
 impl Renderer {
     pub unsafe fn new(gl: &glow::Context, width: u32, height: u32) -> anyhow::Result<Self> {
-        let base_dir = find_asset_root()?;
-        let shader_dir = base_dir.join("shader");
-        let asset_dir = base_dir.join("assets");
         let quad_vao = crate::render_utils::create_quad_vao(gl)?;
 
+        #[cfg(not(target_arch = "wasm32"))]
+        let (shader_dir, asset_dir) = {
+            let base_dir = find_asset_root()?;
+            (base_dir.join("shader"), base_dir.join("assets"))
+        };
+
+        #[cfg(not(target_arch = "wasm32"))]
         let load_pass = |v_name, f_name| -> anyhow::Result<RenderPass> {
             let v_path = shader_dir.join(v_name);
             let f_path = shader_dir.join(f_name);
@@ -129,6 +136,11 @@ impl Renderer {
             RenderPass::new(gl, v_path, f_path, quad_vao)
         };
 
+        #[cfg(target_arch = "wasm32")]
+        let load_pass = |v_name, f_name| -> anyhow::Result<RenderPass> {
+            RenderPass::new(gl, v_name, f_name, quad_vao)
+        };
+
         let pass_blackhole = load_pass("simple.vert", "blackhole_main.frag")?;
         let pass_brightness = load_pass("simple.vert", "bloom_brightness_pass.frag")?;
         let pass_lens_flare = load_pass("simple.vert", "lens_flare.frag")?;
@@ -138,16 +150,28 @@ impl Renderer {
         let pass_tonemapping = load_pass("simple.vert", "tonemapping.frag")?;
         let pass_passthrough = load_pass("simple.vert", "passthrough.frag")?;
 
-        let color_map_path = asset_dir.join("color_map.png");
-        let galaxy_path = asset_dir.join("skybox_nebula_dark");
-        let color_map_path = color_map_path
-            .to_str()
-            .with_context(|| format!("Non-UTF8 texture path: {}", color_map_path.display()))?;
-        let galaxy_path = galaxy_path
-            .to_str()
-            .with_context(|| format!("Non-UTF8 cubemap path: {}", galaxy_path.display()))?;
-        let color_map = crate::texture::load_texture_2d(gl, color_map_path)?;
-        let galaxy_cubemap = crate::texture::load_cubemap(gl, galaxy_path)?;
+        #[cfg(not(target_arch = "wasm32"))]
+        let (color_map, galaxy_cubemap) = {
+            let color_map_path = asset_dir.join("color_map.png");
+            let galaxy_path = asset_dir.join("skybox_nebula_dark");
+            let color_map_path = color_map_path
+                .to_str()
+                .with_context(|| format!("Non-UTF8 texture path: {}", color_map_path.display()))?;
+            let galaxy_path = galaxy_path
+                .to_str()
+                .with_context(|| format!("Non-UTF8 cubemap path: {}", galaxy_path.display()))?;
+            let color_map = crate::texture::load_texture_2d(gl, color_map_path)?;
+            let galaxy_cubemap = crate::texture::load_cubemap(gl, galaxy_path)?;
+            (color_map, galaxy_cubemap)
+        };
+
+        #[cfg(target_arch = "wasm32")]
+        let (color_map, galaxy_cubemap) = {
+            let color_map = crate::texture::load_texture_2d(gl, "color_map.png")?;
+            let galaxy_cubemap = crate::texture::load_cubemap(gl, "skybox_nebula_dark")?;
+            (color_map, galaxy_cubemap)
+        };
+
         let noise_tex = crate::texture::create_noise_texture_3d(gl)?;
 
         let mut renderer = Self {

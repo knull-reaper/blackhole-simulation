@@ -2,8 +2,8 @@ use glow::HasContext;
 
 pub unsafe fn create_framebuffer(
     gl: &glow::Context,
-    texture: glow::NativeTexture,
-) -> anyhow::Result<glow::NativeFramebuffer> {
+    texture: glow::Texture,
+) -> anyhow::Result<glow::Framebuffer> {
     let framebuffer = gl.create_framebuffer().map_err(|e| anyhow::anyhow!(e))?;
     gl.bind_framebuffer(glow::FRAMEBUFFER, Some(framebuffer));
     

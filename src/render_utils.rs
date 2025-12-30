@@ -1,7 +1,7 @@
 #![allow(unsafe_op_in_unsafe_fn)]
 use glow::HasContext;
 
-pub unsafe fn create_quad_vao(gl: &glow::Context) -> anyhow::Result<glow::NativeVertexArray> {
+pub unsafe fn create_quad_vao(gl: &glow::Context) -> anyhow::Result<glow::VertexArray> {
     let vertices: [f32; 18] = [
         -1.0, -1.0, 0.0,
         -1.0,  1.0, 0.0,

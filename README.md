@@ -62,6 +62,16 @@ Run:
 cargo run --release
 ```
 
+## Web (Wasm)
+
+Build the web bundle:
+
+```powershell
+.\scripts\build-web.ps1
+```
+
+Serve the `web/` directory (any static server) and open `http://localhost:8000/`.
+
 ## Releases
 
 If you want a prebuilt binary, grab the latest release from the project Releases page.

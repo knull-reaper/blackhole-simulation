@@ -3,9 +3,9 @@ use glow::HasContext;
 use std::collections::HashMap;
 
 pub struct RenderPass {
-    program: glow::NativeProgram,
-    vao: glow::NativeVertexArray,
-    uniform_locations: HashMap<String, Option<glow::NativeUniformLocation>>,
+    program: glow::Program,
+    vao: glow::VertexArray,
+    uniform_locations: HashMap<String, Option<glow::UniformLocation>>,
 }
 
 impl RenderPass {
@@ -13,7 +13,7 @@ impl RenderPass {
         gl: &glow::Context,
         vertex_path: &str,
         fragment_path: &str,
-        vao: glow::NativeVertexArray,
+        vao: glow::VertexArray,
     ) -> anyhow::Result<Self> {
         let program = crate::shader_utils::create_shader_program(gl, vertex_path, fragment_path)?;
         Ok(Self {
@@ -27,7 +27,7 @@ impl RenderPass {
         &mut self,
         gl: &glow::Context,
         name: &str,
-    ) -> Option<&glow::NativeUniformLocation> {
+    ) -> Option<&glow::UniformLocation> {
         if !self.uniform_locations.contains_key(name) {
             let loc = unsafe { gl.get_uniform_location(self.program, name) };
             self.uniform_locations.insert(name.to_string(), loc);
@@ -38,13 +38,13 @@ impl RenderPass {
     pub unsafe fn render(
         &mut self,
         gl: &glow::Context,
-        target_framebuffer: Option<glow::NativeFramebuffer>,
+        target_framebuffer: Option<glow::Framebuffer>,
         width: i32,
         height: i32,
         float_uniforms: &[(&str, f32)],
-        texture_uniforms: &[(&str, glow::NativeTexture)],
-        texture_3d_uniforms: &[(&str, glow::NativeTexture)],
-        cubemap_uniforms: &[(&str, glow::NativeTexture)],
+        texture_uniforms: &[(&str, glow::Texture)],
+        texture_3d_uniforms: &[(&str, glow::Texture)],
+        cubemap_uniforms: &[(&str, glow::Texture)],
     ) {
         gl.bind_framebuffer(glow::FRAMEBUFFER, target_framebuffer);
         gl.viewport(0, 0, width, height);

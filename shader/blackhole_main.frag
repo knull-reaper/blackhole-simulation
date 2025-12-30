@@ -244,12 +244,12 @@ void adiskColor(vec3 pos, vec3 viewDir, inout vec3 color, inout float alpha) {
   float noise = 1.0;
   for (int i = 0; i < int(adiskNoiseLOD); i++) {
     float scale = pow(float(i), 2.0);
-    float sample = 0.5;
+    float noise_sample = 0.5;
     if (scale > 0.0) {
       vec3 noiseCoord = sphericalCoord * scale * adiskNoiseScale;
-      sample = texture(noiseTex, noiseCoord / NOISE_DOMAIN).r;
+      noise_sample = texture(noiseTex, noiseCoord / NOISE_DOMAIN).r;
     }
-    noise *= sample;
+    noise *= noise_sample;
     if (i % 2 == 0) {
       sphericalCoord.y += time * adiskSpeed;
     } else {
