@@ -3,67 +3,254 @@
 <head>
     <meta charset="utf-8">
     <title>Blackhole Web</title>
+    <link rel="icon" type="image/png" href="./hole_favicon.png">
+    <link rel="apple-touch-icon" href="./hole_favicon.png">
     <style>
-        body { margin: 0; overflow: hidden; background: black; }
+        :root {
+            color-scheme: dark;
+            --bg: #05070b;
+            --panel-bg: rgba(7, 11, 19, 0.9);
+            --text: #e8edf4;
+            --text-muted: #9ba8bc;
+            --accent: #58d2ff;
+            --danger: #ff7b8a;
+            --panel-border: rgba(88, 210, 255, 0.25);
+            --shadow: 0 20px 70px rgba(0, 0, 0, 0.55);
+        }
+        * {
+            box-sizing: border-box;
+        }
+        html, body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: radial-gradient(circle at 20% 20%, #101725, var(--bg) 55%);
+            color: var(--text);
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
         canvas { display: block; width: 100vw; height: 100vh; }
-        #mobile-warning {
+        #boot-overlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            z-index: 10;
-            display: none;
-            padding: 12px 16px;
-            background: rgba(0, 0, 0, 0.9);
-            color: #fff;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
-        }
-        #mobile-warning .content {
+            bottom: 0;
+            z-index: 1000;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 12px;
+            justify-content: center;
+            padding: 24px;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(88, 210, 255, 0.18), transparent 45%),
+                radial-gradient(circle at 80% 80%, rgba(190, 245, 255, 0.12), transparent 45%),
+                var(--bg);
+            transition: opacity 260ms ease;
+        }
+        #boot-overlay.is-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .boot-card {
+            width: min(560px, 92vw);
+            border: 1px solid var(--panel-border);
+            border-radius: 18px;
+            background: var(--panel-bg);
+            box-shadow: var(--shadow);
+            padding: 28px 26px;
+            text-align: left;
+        }
+        .boot-headline {
+            margin: 0;
+            font-size: clamp(24px, 4vw, 34px);
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            font-weight: 800;
+        }
+        .boot-status {
+            margin: 12px 0 0;
+            color: var(--text-muted);
+            line-height: 1.5;
+            font-size: 16px;
+        }
+        .boot-note {
+            margin: 16px 0 0;
+            color: #c6d0de;
+            line-height: 1.4;
+            font-size: 14px;
+            border-left: 2px solid rgba(198, 208, 222, 0.3);
+            padding-left: 10px;
+        }
+        .spinner-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid rgba(88, 210, 255, 0.2);
+            border-top-color: var(--accent);
+            animation: spin 900ms linear infinite;
+            flex: 0 0 auto;
+        }
+        .spinner.hidden {
+            display: none;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        #boot-action {
+            margin-top: 18px;
+            border: 1px solid rgba(88, 210, 255, 0.4);
+            background: rgba(88, 210, 255, 0.08);
+            color: var(--text);
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
             font-size: 14px;
         }
-        #mobile-warning strong { font-weight: 600; }
-        #mobile-warning button {
-            border: 1px solid #555;
-            background: transparent;
-            color: #fff;
-            padding: 6px 10px;
-            border-radius: 6px;
-            cursor: pointer;
+        #boot-action:hover {
+            background: rgba(88, 210, 255, 0.18);
+        }
+        .error .boot-headline {
+            color: var(--danger);
+        }
+        .warning .boot-headline {
+            color: #ffd07b;
         }
     </style>
 </head>
 <body>
-    <div id="mobile-warning" role="alert">
-        <div class="content">
-            <div>
-                <strong>Desktop Recommended</strong>
-                <span>For best performance, open this on a desktop with a dedicated GPU.</span>
+    <div id="boot-overlay" role="status" aria-live="polite">
+        <div class="boot-card">
+            <div class="spinner-row">
+                <div id="boot-spinner" class="spinner" aria-hidden="true"></div>
+                <span id="boot-phase">Preparing</span>
             </div>
-            <button id="mobile-warning-dismiss" type="button">OK</button>
+            <h1 id="boot-title" class="boot-headline">Loading Simulation</h1>
+            <p id="boot-message" class="boot-status">Initializing WebAssembly and render pipeline...</p>
+            <p id="boot-note" class="boot-note">This simulation is optimized for desktop browsers with WebGL2 support.</p>
+            <button id="boot-action" type="button" hidden>Retry</button>
         </div>
     </div>
     <script type="module">
         import init from './pkg/blackhole_web.js';
-        const isMobile = (navigator.userAgentData && navigator.userAgentData.mobile) ||
-            /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-            window.matchMedia('(pointer: coarse)').matches;
-        if (isMobile) {
-            const warning = document.getElementById('mobile-warning');
-            const dismiss = document.getElementById('mobile-warning-dismiss');
-            if (warning) {
-                warning.style.display = 'block';
+        const overlay = document.getElementById('boot-overlay');
+        const spinner = document.getElementById('boot-spinner');
+        const phase = document.getElementById('boot-phase');
+        const title = document.getElementById('boot-title');
+        const message = document.getElementById('boot-message');
+        const note = document.getElementById('boot-note');
+        const action = document.getElementById('boot-action');
+        const MIN_LOADING_MS = 1000;
+
+        function classifyDevice() {
+            const uaDataMobile = navigator.userAgentData && navigator.userAgentData.mobile === true;
+            const ua = navigator.userAgent || '';
+            const uaMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua);
+            const coarse = window.matchMedia('(pointer: coarse)').matches;
+            const noHover = window.matchMedia('(hover: none)').matches;
+            const hasTouch = (navigator.maxTouchPoints || 0) > 1;
+            const smallViewport = Math.max(window.innerWidth, window.innerHeight) < 1100;
+            return uaDataMobile || uaMobile || (coarse && noHover && hasTouch && smallViewport);
+        }
+
+        function supportsWebGl2() {
+            const canvas = document.createElement('canvas');
+            return !!canvas.getContext('webgl2');
+        }
+
+        function setOverlayState({ phaseText, titleText, messageText, noteText, tone = '', showSpinner = true, actionLabel = '', onAction = null }) {
+            overlay.classList.remove('error', 'warning');
+            if (tone) {
+                overlay.classList.add(tone);
             }
-            if (dismiss) {
-                dismiss.addEventListener('click', () => {
-                    warning.style.display = 'none';
+            spinner.classList.toggle('hidden', !showSpinner);
+            phase.textContent = phaseText;
+            title.textContent = titleText;
+            message.textContent = messageText;
+            note.textContent = noteText;
+
+            if (actionLabel && onAction) {
+                action.hidden = false;
+                action.textContent = actionLabel;
+                action.onclick = onAction;
+            } else {
+                action.hidden = true;
+                action.onclick = null;
+            }
+        }
+
+        function hideOverlay() {
+            overlay.classList.add('is-hidden');
+        }
+
+        function delay(ms) {
+            return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+
+        async function startSimulation() {
+            const isMobileOrTablet = classifyDevice();
+            if (isMobileOrTablet) {
+                setOverlayState({
+                    phaseText: 'Desktop Only',
+                    titleText: 'Simulation Runs On Desktop',
+                    messageText: 'Mobile and tablet browsers are currently unsupported due to unstable WebGL behavior.',
+                    noteText: 'Open this page on a desktop browser (Chrome, Edge, or Firefox) with hardware acceleration enabled.',
+                    tone: 'warning',
+                    showSpinner: false
+                });
+                return;
+            }
+
+            if (!supportsWebGl2()) {
+                setOverlayState({
+                    phaseText: 'Unsupported Browser',
+                    titleText: 'WebGL2 Is Required',
+                    messageText: 'This browser or GPU cannot create a WebGL2 context for the simulation.',
+                    noteText: 'Try the latest desktop Chrome, Edge, or Firefox and confirm hardware acceleration is enabled.',
+                    tone: 'warning',
+                    showSpinner: false
+                });
+                return;
+            }
+
+            setOverlayState({
+                phaseText: 'Starting',
+                titleText: 'Loading Simulation',
+                messageText: 'Compiling shaders and preparing the render pipeline...',
+                noteText: 'First load can take a few seconds depending on your browser and GPU.',
+                showSpinner: true
+            });
+
+            const startedAt = performance.now();
+            try {
+                await init();
+                const elapsed = performance.now() - startedAt;
+                if (elapsed < MIN_LOADING_MS) {
+                    await delay(MIN_LOADING_MS - elapsed);
+                }
+                hideOverlay();
+            } catch (error) {
+                console.error(error);
+                setOverlayState({
+                    phaseText: 'Launch Failed',
+                    titleText: 'Simulation Failed To Start',
+                    messageText: error && error.message ? error.message : 'Unknown startup error.',
+                    noteText: 'Reload the page or try another desktop browser with WebGL2 support.',
+                    tone: 'error',
+                    showSpinner: false,
+                    actionLabel: 'Retry',
+                    onAction: () => window.location.reload()
                 });
             }
         }
-        init();
+
+        startSimulation();
     </script>
 </body>
 </html>

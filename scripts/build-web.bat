@@ -23,6 +23,12 @@ if not exist "%WASM_PATH%" (
 )
 
 wasm-bindgen --out-dir web\pkg --target web "%WASM_PATH%" || goto :error
+
+if exist "assets\hole_favicon.png" (
+    copy /Y "assets\hole_favicon.png" "web\hole_favicon.png" >nul || goto :error
+) else (
+    echo Warning: favicon not found at assets\hole_favicon.png
+)
 popd
 exit /b 0
 

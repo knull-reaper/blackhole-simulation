@@ -23,6 +23,14 @@ if (-not (Test-Path $wasmPath)) {
 }
 
 wasm-bindgen --out-dir (Join-Path $repoRoot "web/pkg") --target web $wasmPath
+
+$faviconSrc = Join-Path $repoRoot "assets/hole_favicon.png"
+$faviconDst = Join-Path $repoRoot "web/hole_favicon.png"
+if (Test-Path $faviconSrc) {
+    Copy-Item $faviconSrc $faviconDst -Force
+} else {
+    Write-Warning "Favicon not found at $faviconSrc"
+}
 } finally {
     Pop-Location
 }

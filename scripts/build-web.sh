@@ -25,4 +25,12 @@ if [[ ! -f "$WASM_PATH" ]]; then
 fi
 
 wasm-bindgen --out-dir "$REPO_ROOT/web/pkg" --target web "$WASM_PATH"
+
+FAVICON_SRC="$REPO_ROOT/assets/hole_favicon.png"
+FAVICON_DST="$REPO_ROOT/web/hole_favicon.png"
+if [[ -f "$FAVICON_SRC" ]]; then
+  cp "$FAVICON_SRC" "$FAVICON_DST"
+else
+  echo "Warning: favicon not found at $FAVICON_SRC"
+fi
 popd >/dev/null
